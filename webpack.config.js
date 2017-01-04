@@ -1,10 +1,10 @@
 module.exports = {
     entry: {
-        'index': './src/react-slider.js'
+        'index': './src/react-slider/index.js'
     },
     output: {
-        path: './dist/',
-        filename: "[name].js",
+        path: 'dist/',
+        filename: '[name].js',
         libraryTarget: 'umd',
         library: 'reactSlider',
     },
@@ -17,7 +17,11 @@ module.exports = {
                 query: {
                     presets: ['es2015', 'react']
                 }
+            },
+            {
+                test: /\.css/,
+                loaders: ['style?singleton', 'css?module&localIdentName=_[hash:base64:12]']
             }
-        ],
+        ]
     }
 };
