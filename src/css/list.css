@@ -1,0 +1,10 @@
+.list{
+    overflow: hidden;
+    width: 800px;
+    height: 500px;
+    margin: 0 auto;
+    padding: 0;
+    border: 1px solid #333;
+    background-color: #eee;
+    list-style: none;
+}

@@ -1,0 +1,9 @@
+.item{
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: none;
+}
+.item_state_active{
+    display: block;
+}
