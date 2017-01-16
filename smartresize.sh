@@ -13,3 +13,7 @@ mogrify -filter Triangle \
 -interlace none \
 -colorspace sRGB 1.jpg
 
+#find -name "*.jpg" | \
+#    grep -v "lqip" | \
+#    sed 'p;s/\.jpg/\-lqip.jpg/' | \
+#    xargs -n2 convert -resize 100 -strip -interlace Plane -quality 10

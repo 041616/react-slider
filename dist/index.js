@@ -21513,7 +21513,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _index2 = _interopRequireDefault(_index);
 
-	var _list = __webpack_require__(184);
+	var _list = __webpack_require__(186);
 
 	var _list2 = _interopRequireDefault(_list);
 
@@ -21524,6 +21524,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var directions = {
+	  PREV: 0,
+	  NEXT: 1
+	};
 
 	var status = {
 	  PENDING: 'pending',
@@ -21544,13 +21549,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        activeImage = props.activeImage;
 
 	    var load = [];
-	    var activeIndex = activeImage < 0 || activeImage >= imageList.length ? 0 : activeImage;
+	    var index = activeImage < 0 || activeImage >= imageList.length ? 0 : activeImage;
 	    for (var i = 0; i < imageList.length; i++) {
-	      load.push(i === activeIndex ? status.LOADING : status.PENDING);
+	      load.push(i === index ? status.LOADING : status.PENDING);
 	    }
 	    _this.state = {
 	      load: load,
-	      activeIndex: activeIndex
+	      currIndex: null,
+	      nextIndex: index
 	    };
 	    return _this;
 	  }
@@ -21564,10 +21570,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'componentDidUpdate',
 	    value: function componentDidUpdate() {
 	      var _state = this.state,
-	          activeIndex = _state.activeIndex,
+	          nextIndex = _state.nextIndex,
 	          load = _state.load;
 
-	      if (load[activeIndex] === status.LOADING) {
+	      if (load[nextIndex] === status.LOADING) {
 	        this.createLoader();
 	      }
 	    }
@@ -21578,7 +21584,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.img = new Image();
 	      this.img.onload = this.handleLoad.bind(this);
 	      this.img.onerror = this.handleError.bind(this);
-	      this.img.src = this.props.imageList[this.state.activeIndex].src;
+	      this.img.src = this.props.imageList[this.state.nextIndex].src;
 	    }
 	  }, {
 	    key: 'destroyLoader',
@@ -21593,37 +21599,53 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'handleLoad',
 	    value: function handleLoad() {
 	      var _state2 = this.state,
-	          activeIndex = _state2.activeIndex,
+	          nextIndex = _state2.nextIndex,
 	          load = _state2.load;
 
 	      this.destroyLoader();
-	      load[activeIndex] = status.LOADED;
+	      load[nextIndex] = status.LOADED;
 	      this.setState({ load: load });
 	    }
 	  }, {
 	    key: 'handleError',
 	    value: function handleError() {
 	      var _state3 = this.state,
-	          activeIndex = _state3.activeIndex,
+	          nextIndex = _state3.nextIndex,
 	          load = _state3.load;
 
 	      this.destroyLoader();
-	      load[activeIndex] = status.FAILED;
+	      load[nextIndex] = status.FAILED;
 	      this.setState({ load: load });
 	    }
 	  }, {
 	    key: 'onButtonClick',
-	    value: function onButtonClick() {
+	    value: function onButtonClick(direction) {
 	      var _state4 = this.state,
-	          activeIndex = _state4.activeIndex,
+	          nextIndex = _state4.nextIndex,
 	          load = _state4.load;
 
-	      var nextActiveIndex = activeIndex + 1 < load.length ? activeIndex + 1 : 0;
-	      load[nextActiveIndex] = load[nextActiveIndex] !== status.LOADED ? status.LOADING : status.LOADED;
+	      var newNextIndex = void 0;
+	      if (direction === directions.NEXT) {
+	        newNextIndex = nextIndex + 1 < load.length ? nextIndex + 1 : 0;
+	      } else if (direction === directions.PREV) {
+	        newNextIndex = nextIndex - 1 < 0 ? load.length - 1 : nextIndex - 1;
+	      }
+	      load[newNextIndex] = load[newNextIndex] !== status.LOADED ? status.LOADING : status.LOADED;
 	      this.setState({
 	        load: load,
-	        activeIndex: nextActiveIndex
+	        nextIndex: newNextIndex,
+	        currIndex: nextIndex
 	      });
+	    }
+	  }, {
+	    key: 'onButtonNextClick',
+	    value: function onButtonNextClick() {
+	      this.onButtonClick(directions.NEXT);
+	    }
+	  }, {
+	    key: 'onButtonPrevClick',
+	    value: function onButtonPrevClick() {
+	      this.onButtonClick(directions.PREV);
 	    }
 	  }, {
 	    key: 'render',
@@ -21631,7 +21653,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var items = [];
 	      var imageList = this.props.imageList;
 	      var _state5 = this.state,
-	          activeIndex = _state5.activeIndex,
+	          currIndex = _state5.currIndex,
+	          nextIndex = _state5.nextIndex,
 	          load = _state5.load;
 
 	      for (var i = 0; i < imageList.length; i++) {
@@ -21639,14 +21662,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	          items.push(_react2.default.createElement(_index2.default, {
 	            key: i,
 	            src: imageList[i].data,
-	            active: i === activeIndex,
+	            current: i === currIndex,
+	            next: i === nextIndex,
 	            loaded: false
 	          }));
 	        } else if (load[i] === status.LOADED) {
 	          items.push(_react2.default.createElement(_index2.default, {
 	            key: i,
 	            src: imageList[i].src,
-	            active: i === activeIndex,
+	            current: i === currIndex,
+	            next: i === nextIndex,
 	            loaded: true
 	          }));
 	        }
@@ -21656,7 +21681,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        null,
 	        _react2.default.createElement(
 	          'button',
-	          { onClick: this.onButtonClick.bind(this) },
+	          { onClick: this.onButtonPrevClick.bind(this) },
+	          'prev image'
+	        ),
+	        _react2.default.createElement(
+	          'button',
+	          { onClick: this.onButtonNextClick.bind(this) },
 	          'next image'
 	        ),
 	        _react2.default.createElement(
@@ -21696,11 +21726,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _item = __webpack_require__(186);
+	var _item = __webpack_require__(180);
 
 	var _item2 = _interopRequireDefault(_item);
 
-	var _image = __webpack_require__(188);
+	var _image = __webpack_require__(184);
 
 	var _image2 = _interopRequireDefault(_image);
 
@@ -21726,15 +21756,36 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function render() {
 	      var _props = this.props,
 	          src = _props.src,
-	          active = _props.active,
+	          current = _props.current,
+	          next = _props.next,
 	          loaded = _props.loaded;
 
-	      var itemClassName = active ? _item2.default.item + ' ' + _item2.default.item_state_active : _item2.default.item;
-	      var imageClassName = loaded ? _image2.default.image : _image2.default.image + ' ' + _image2.default.image_filter_blur;
+	      var itemClassName = void 0;
+	      var image = void 0;
+
+	      if (next) {
+	        itemClassName = _item2.default.item + ' ' + _item2.default.item_state_active;
+	      } else if (current) {
+	        itemClassName = _item2.default.item + ' ' + _item2.default.item_state_current;
+	      } else {
+	        itemClassName = _item2.default.item;
+	      }
+
+	      if (loaded) {
+	        image = _react2.default.createElement('img', { className: _image2.default.image, src: src, alt: '' });
+	      } else {
+	        image = _react2.default.createElement('img', {
+	          className: _image2.default.image + ' ' + _image2.default.image_state_preview,
+	          style: {
+	            background: 'url(' + src + ') no-repeat 50% 50%',
+	            backgroundSize: 'contain'
+	          }
+	        });
+	      }
 	      return _react2.default.createElement(
 	        'li',
 	        { className: itemClassName },
-	        _react2.default.createElement('img', { className: imageClassName, src: src, alt: '' })
+	        image
 	      );
 	    }
 	  }]);
@@ -21744,14 +21795,56 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	Item.propTypes = {
 	  src: _react2.default.PropTypes.string,
-	  active: _react2.default.PropTypes.bool,
+	  current: _react2.default.PropTypes.bool,
+	  next: _react2.default.PropTypes.bool,
 	  loaded: _react2.default.PropTypes.bool
 	};
 	exports.default = Item;
 
 /***/ },
-/* 180 */,
-/* 181 */,
+/* 180 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// style-loader: Adds some css to the DOM by adding a <style> tag
+
+	// load the styles
+	var content = __webpack_require__(181);
+	if(typeof content === 'string') content = [[module.id, content, '']];
+	// add the styles to the DOM
+	var update = __webpack_require__(183)(content, {"singleton":true});
+	if(content.locals) module.exports = content.locals;
+	// Hot Module Replacement
+	if(false) {
+		// When the styles change, update the <style> tags
+		if(!content.locals) {
+			module.hot.accept("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./item.css", function() {
+				var newContent = require("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./item.css");
+				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+				update(newContent);
+			});
+		}
+		// When the module is disposed, remove the <style> tags
+		module.hot.dispose(function() { update(); });
+	}
+
+/***/ },
+/* 181 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(182)();
+	// imports
+
+
+	// module
+	exports.push([module.id, "._1zM0aMsnXDae{\n    position: absolute;\n    left: 100%;\n    top: 0;\n    width: 100%;\n    height: 100%;\n    transition: left 1s ease-out;\n}\n._oGCAkHFYg37J{\n    z-index: 1;\n    left: 0;\n}\n._oGCAkHFYg37J{\n    z-index: 1;\n    left: -100%;\n}\n", ""]);
+
+	// exports
+	exports.locals = {
+		"item": "_1zM0aMsnXDae",
+		"item_state_active": "_oGCAkHFYg37J"
+	};
+
+/***/ },
 /* 182 */
 /***/ function(module, exports) {
 
@@ -22075,8 +22168,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	if(false) {
 		// When the styles change, update the <style> tags
 		if(!content.locals) {
-			module.hot.accept("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./list.css", function() {
-				var newContent = require("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./list.css");
+			module.hot.accept("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./image.css", function() {
+				var newContent = require("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./image.css");
 				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 				update(newContent);
 			});
@@ -22094,11 +22187,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 	// module
-	exports.push([module.id, "._1XRY_2WbsVn_{\n    overflow: hidden;\n    width: 800px;\n    height: 500px;\n    margin: 0 auto;\n    padding: 0;\n    border: 1px solid #333;\n    background-color: #eee;\n    list-style: none;\n}\n", ""]);
+	exports.push([module.id, "._1qr8sHHPe70p{\n    position: absolute;\n    top: 0;\n    left: 0;\n    bottom: 0;\n    right: 0;\n    max-width: 100%;\n    max-height: 100%;\n    margin: auto;\n}\n._3nEAaKSe_r_s{\n    bottom: auto;\n    right: auto;\n    width: 100%;\n    height: 100%;\n    max-width: none;\n    max-height: none;\n    -webkit-filter: blur(5px);\n    filter: blur(5px);\n}\n", ""]);
 
 	// exports
 	exports.locals = {
-		"list": "_1XRY_2WbsVn_"
+		"image": "_1qr8sHHPe70p",
+		"image_state_preview": "_3nEAaKSe_r_s"
 	};
 
 /***/ },
@@ -22117,8 +22211,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	if(false) {
 		// When the styles change, update the <style> tags
 		if(!content.locals) {
-			module.hot.accept("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./item.css", function() {
-				var newContent = require("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./item.css");
+			module.hot.accept("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./list.css", function() {
+				var newContent = require("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./list.css");
 				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 				update(newContent);
 			});
@@ -22136,55 +22230,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 	// module
-	exports.push([module.id, "._1zM0aMsnXDae{\n    position: relative;\n    width: 100%;\n    height: 100%;\n    display: none;\n}\n._oGCAkHFYg37J{\n    display: block;\n}\n", ""]);
+	exports.push([module.id, "._1XRY_2WbsVn_{\n    position: relative;\n    overflow: hidden;\n    width: 800px;\n    height: 500px;\n    margin: 0 auto;\n    padding: 0;\n    border: 1px solid #333;\n    background-color: #eee;\n    list-style: none;\n}\n", ""]);
 
 	// exports
 	exports.locals = {
-		"item": "_1zM0aMsnXDae",
-		"item_state_active": "_oGCAkHFYg37J"
-	};
-
-/***/ },
-/* 188 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// style-loader: Adds some css to the DOM by adding a <style> tag
-
-	// load the styles
-	var content = __webpack_require__(189);
-	if(typeof content === 'string') content = [[module.id, content, '']];
-	// add the styles to the DOM
-	var update = __webpack_require__(183)(content, {"singleton":true});
-	if(content.locals) module.exports = content.locals;
-	// Hot Module Replacement
-	if(false) {
-		// When the styles change, update the <style> tags
-		if(!content.locals) {
-			module.hot.accept("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./image.css", function() {
-				var newContent = require("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./image.css");
-				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-				update(newContent);
-			});
-		}
-		// When the module is disposed, remove the <style> tags
-		module.hot.dispose(function() { update(); });
-	}
-
-/***/ },
-/* 189 */
-/***/ function(module, exports, __webpack_require__) {
-
-	exports = module.exports = __webpack_require__(182)();
-	// imports
-
-
-	// module
-	exports.push([module.id, "._1qr8sHHPe70p{\n    position: absolute;\n    top: 0;\n    left: 0;\n    bottom: 0;\n    right: 0;\n    max-width: 100%;\n    max-height: 100%;\n    margin: auto;\n}\n._2uQSiwgQjlvU{\n    -webkit-filter: blur(6px);\n    filter: blur(6px);\n}\n", ""]);
-
-	// exports
-	exports.locals = {
-		"image": "_1qr8sHHPe70p",
-		"image_filter_blur": "_2uQSiwgQjlvU"
+		"list": "_1XRY_2WbsVn_"
 	};
 
 /***/ }

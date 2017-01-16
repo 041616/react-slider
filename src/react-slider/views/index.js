@@ -2,6 +2,11 @@ import React from 'react';
 import Item from './Item/index';
 import ls from '../../css/list.css';
 
+const directions = {
+  PREV: 0,
+  NEXT: 1
+}
+
 const status = {
   PENDING: 'pending',
   LOADING: 'loading',
@@ -24,13 +29,14 @@ class Slider extends React.Component {
     super(props);
     const {imageList, activeImage} = props;
     let load = [];
-    let activeIndex = activeImage < 0 || activeImage >= imageList.length ? 0 : activeImage;
+    let index = activeImage < 0 || activeImage >= imageList.length ? 0 : activeImage;
     for (let i = 0; i < imageList.length; i++) {
-      load.push(i === activeIndex ? status.LOADING : status.PENDING);
+      load.push(i === index ? status.LOADING : status.PENDING);
     }
     this.state = {
       load: load,
-      activeIndex: activeIndex
+      currIndex: null,
+      nextIndex: index
     };
   }
 
@@ -39,8 +45,8 @@ class Slider extends React.Component {
   }
 
   componentDidUpdate() {
-    const {activeIndex, load} = this.state;
-    if (load[activeIndex] === status.LOADING) {
+    const {nextIndex, load} = this.state;
+    if (load[nextIndex] === status.LOADING) {
       this.createLoader();
     }
   }
@@ -50,7 +56,7 @@ class Slider extends React.Component {
     this.img = new Image();
     this.img.onload = ::this.handleLoad;
     this.img.onerror = ::this.handleError;
-    this.img.src = this.props.imageList[this.state.activeIndex].src;
+    this.img.src = this.props.imageList[this.state.nextIndex].src;
   }
 
   destroyLoader() {
@@ -62,53 +68,70 @@ class Slider extends React.Component {
   }
 
   handleLoad() {
-    const {activeIndex, load} = this.state;
+    const {nextIndex, load} = this.state;
     this.destroyLoader();
-    load[activeIndex] = status.LOADED;
+    load[nextIndex] = status.LOADED;
     this.setState({load: load});
   }
 
   handleError() {
-    const {activeIndex, load} = this.state;
+    const {nextIndex, load} = this.state;
     this.destroyLoader();
-    load[activeIndex] = status.FAILED;
+    load[nextIndex] = status.FAILED;
     this.setState({load: load});
   }
 
-  onButtonClick() {
-    const {activeIndex, load} = this.state;
-    const nextActiveIndex = activeIndex + 1 < load.length ? activeIndex + 1 : 0;
-    load[nextActiveIndex] = load[nextActiveIndex] !== status.LOADED ? status.LOADING : status.LOADED;
+  onButtonClick(direction) {
+    const {nextIndex, load} = this.state;
+    let newNextIndex;
+    if (direction === directions.NEXT) {
+      newNextIndex = nextIndex + 1 < load.length ? nextIndex + 1 : 0;
+    } else if (direction === directions.PREV) {
+      newNextIndex = nextIndex - 1 < 0 ? load.length - 1 : nextIndex - 1;
+    }
+    load[newNextIndex] = load[newNextIndex] !== status.LOADED ? status.LOADING : status.LOADED;
     this.setState({
       load: load,
-      activeIndex: nextActiveIndex
+      nextIndex: newNextIndex,
+      currIndex: nextIndex
     });
+  }
+
+  onButtonNextClick() {
+    this.onButtonClick(directions.NEXT);
+  }
+
+  onButtonPrevClick() {
+    this.onButtonClick(directions.PREV);
   }
 
   render() {
     const items = [];
     const {imageList} = this.props;
-    const {activeIndex, load} = this.state;
+    const {currIndex, nextIndex, load} = this.state;
     for (let i = 0; i < imageList.length; i++) {
       if (load[i] === status.LOADING) {
         items.push(<Item
           key={i}
           src={imageList[i].data}
-          active={i === activeIndex}
+          current={i === currIndex}
+          next={i === nextIndex}
           loaded={false}
         />);
       } else if (load[i] === status.LOADED) {
         items.push(<Item
           key={i}
           src={imageList[i].src}
-          active={i === activeIndex}
+          current={i === currIndex}
+          next={i === nextIndex}
           loaded={true}
         />);
       }
     };
     return (
       <div>
-        <button onClick={::this.onButtonClick}>next image</button>
+        <button onClick={::this.onButtonPrevClick}>prev image</button>
+        <button onClick={::this.onButtonNextClick}>next image</button>
         <ul className={ls.list}>
           {items}
         </ul>
