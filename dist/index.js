@@ -21505,17 +21505,19 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+	var _list = __webpack_require__(179);
+
+	var _list2 = _interopRequireDefault(_list);
+
 	var _react = __webpack_require__(1);
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _index = __webpack_require__(179);
+	var _index = __webpack_require__(183);
 
 	var _index2 = _interopRequireDefault(_index);
 
-	var _list = __webpack_require__(186);
-
-	var _list2 = _interopRequireDefault(_list);
+	var _utils = __webpack_require__(184);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -21524,18 +21526,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var directions = {
-	  PREV: 0,
-	  NEXT: 1
-	};
-
-	var status = {
-	  PENDING: 'pending',
-	  LOADING: 'loading',
-	  LOADED: 'loaded',
-	  FAILED: 'failed'
-	};
 
 	var Slider = function (_React$Component) {
 	  _inherits(Slider, _React$Component);
@@ -21548,15 +21538,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var imageList = props.imageList,
 	        activeImage = props.activeImage;
 
-	    var load = [];
+	    var downloadList = [];
 	    var index = activeImage < 0 || activeImage >= imageList.length ? 0 : activeImage;
 	    for (var i = 0; i < imageList.length; i++) {
-	      load.push(i === index ? status.LOADING : status.PENDING);
+	      downloadList.push(i === index ? _utils.downloadState.LOADING : _utils.downloadState.PENDING);
 	    }
 	    _this.state = {
-	      load: load,
-	      currIndex: null,
-	      nextIndex: index
+	      downloadList: downloadList,
+	      animation: _utils.animationState.STOPPED,
+	      currIndex: index,
+	      prevIndex: -1
 	    };
 	    return _this;
 	  }
@@ -21570,12 +21561,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'componentDidUpdate',
 	    value: function componentDidUpdate() {
 	      var _state = this.state,
-	          nextIndex = _state.nextIndex,
-	          load = _state.load;
+	          currIndex = _state.currIndex,
+	          downloadList = _state.downloadList,
+	          animation = _state.animation;
 
-	      if (load[nextIndex] === status.LOADING) {
+	      if (downloadList[currIndex] === _utils.downloadState.LOADING && animation === _utils.animationState.STOPPED) {
 	        this.createLoader();
-	      }
+	      };
+	      if (animation === _utils.animationState.PLAYING) {
+	        setTimeout(this.stopAnimation.bind(this), this.props.duration);
+	      };
 	    }
 	  }, {
 	    key: 'createLoader',
@@ -21584,7 +21579,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.img = new Image();
 	      this.img.onload = this.handleLoad.bind(this);
 	      this.img.onerror = this.handleError.bind(this);
-	      this.img.src = this.props.imageList[this.state.nextIndex].src;
+	      this.img.src = this.props.imageList[this.state.currIndex].src;
 	    }
 	  }, {
 	    key: 'destroyLoader',
@@ -21599,80 +21594,103 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'handleLoad',
 	    value: function handleLoad() {
 	      var _state2 = this.state,
-	          nextIndex = _state2.nextIndex,
-	          load = _state2.load;
+	          currIndex = _state2.currIndex,
+	          downloadList = _state2.downloadList;
 
 	      this.destroyLoader();
-	      load[nextIndex] = status.LOADED;
-	      this.setState({ load: load });
+	      downloadList[currIndex] = _utils.downloadState.LOADED;
+	      this.setState({ downloadList: downloadList });
 	    }
 	  }, {
 	    key: 'handleError',
 	    value: function handleError() {
 	      var _state3 = this.state,
-	          nextIndex = _state3.nextIndex,
-	          load = _state3.load;
+	          currIndex = _state3.currIndex,
+	          downloadList = _state3.downloadList;
 
 	      this.destroyLoader();
-	      load[nextIndex] = status.FAILED;
-	      this.setState({ load: load });
+	      downloadList[currIndex] = _utils.downloadState.FAILED;
+	      this.setState({ downloadList: downloadList });
 	    }
 	  }, {
 	    key: 'onButtonClick',
 	    value: function onButtonClick(direction) {
 	      var _state4 = this.state,
-	          nextIndex = _state4.nextIndex,
-	          load = _state4.load;
+	          currIndex = _state4.currIndex,
+	          downloadList = _state4.downloadList,
+	          animation = _state4.animation;
 
-	      var newNextIndex = void 0;
-	      if (direction === directions.NEXT) {
-	        newNextIndex = nextIndex + 1 < load.length ? nextIndex + 1 : 0;
-	      } else if (direction === directions.PREV) {
-	        newNextIndex = nextIndex - 1 < 0 ? load.length - 1 : nextIndex - 1;
+	      if (animation === _utils.animationState.PLAYING) return;
+	      var nextIndex = void 0;
+	      if (direction === _utils.directions.NEXT) {
+	        nextIndex = currIndex + 1 < downloadList.length ? currIndex + 1 : 0;
+	      } else if (direction === _utils.directions.PREV) {
+	        nextIndex = currIndex - 1 < 0 ? downloadList.length - 1 : currIndex - 1;
 	      }
-	      load[newNextIndex] = load[newNextIndex] !== status.LOADED ? status.LOADING : status.LOADED;
+	      downloadList[nextIndex] = downloadList[nextIndex] !== _utils.downloadState.LOADED ? _utils.downloadState.LOADING : _utils.downloadState.LOADED;
 	      this.setState({
-	        load: load,
-	        nextIndex: newNextIndex,
-	        currIndex: nextIndex
+	        downloadList: downloadList,
+	        currIndex: nextIndex,
+	        prevIndex: currIndex,
+	        animation: _utils.animationState.PLAYING
 	      });
 	    }
 	  }, {
 	    key: 'onButtonNextClick',
 	    value: function onButtonNextClick() {
-	      this.onButtonClick(directions.NEXT);
+	      this.onButtonClick(_utils.directions.NEXT);
 	    }
 	  }, {
 	    key: 'onButtonPrevClick',
 	    value: function onButtonPrevClick() {
-	      this.onButtonClick(directions.PREV);
+	      this.onButtonClick(_utils.directions.PREV);
+	    }
+	  }, {
+	    key: 'stopAnimation',
+	    value: function stopAnimation() {
+	      this.setState({ animation: _utils.animationState.STOPPED });
 	    }
 	  }, {
 	    key: 'render',
 	    value: function render() {
 	      var items = [];
-	      var imageList = this.props.imageList;
+	      var _props = this.props,
+	          imageList = _props.imageList,
+	          duration = _props.duration,
+	          timingFunc = _props.timingFunc,
+	          anim = _props.anim;
 	      var _state5 = this.state,
 	          currIndex = _state5.currIndex,
-	          nextIndex = _state5.nextIndex,
-	          load = _state5.load;
+	          prevIndex = _state5.prevIndex,
+	          downloadList = _state5.downloadList,
+	          animation = _state5.animation;
 
 	      for (var i = 0; i < imageList.length; i++) {
-	        if (load[i] === status.LOADING) {
+	        if (downloadList[i] === _utils.downloadState.LOADING) {
 	          items.push(_react2.default.createElement(_index2.default, {
 	            key: i,
 	            src: imageList[i].data,
+	            initial: prevIndex < 0,
 	            current: i === currIndex,
-	            next: i === nextIndex,
-	            loaded: false
+	            previous: i === prevIndex,
+	            duration: duration,
+	            func: (0, _utils.getTimingFunction)(timingFunc),
+	            anim: (0, _utils.getAnimationFunction)(anim),
+	            loaded: false,
+	            playing: animation === _utils.animationState.PLAYING
 	          }));
-	        } else if (load[i] === status.LOADED) {
+	        } else if (downloadList[i] === _utils.downloadState.LOADED) {
 	          items.push(_react2.default.createElement(_index2.default, {
 	            key: i,
 	            src: imageList[i].src,
+	            initial: prevIndex < 0,
 	            current: i === currIndex,
-	            next: i === nextIndex,
-	            loaded: true
+	            previous: i === prevIndex,
+	            duration: duration,
+	            func: (0, _utils.getTimingFunction)(timingFunc),
+	            anim: (0, _utils.getAnimationFunction)(anim),
+	            loaded: true,
+	            playing: animation === _utils.animationState.PLAYING
 	          }));
 	        }
 	      };
@@ -21681,12 +21699,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	        null,
 	        _react2.default.createElement(
 	          'button',
-	          { onClick: this.onButtonPrevClick.bind(this) },
+	          {
+	            onClick: this.onButtonPrevClick.bind(this)
+	          },
 	          'prev image'
 	        ),
 	        _react2.default.createElement(
 	          'button',
-	          { onClick: this.onButtonNextClick.bind(this) },
+	          {
+	            onClick: this.onButtonNextClick.bind(this)
+	          },
 	          'next image'
 	        ),
 	        _react2.default.createElement(
@@ -21703,10 +21725,18 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	Slider.propTypes = {
 	  imageList: _react2.default.PropTypes.array.isRequired,
-	  activeImage: _react2.default.PropTypes.number
+	  activeImage: _react2.default.PropTypes.number,
+	  anim: _react2.default.PropTypes.string,
+	  timingFunc: _react2.default.PropTypes.string,
+	  duration: _react2.default.PropTypes.number,
+	  delay: _react2.default.PropTypes.number
 	};
 	Slider.defaultProps = {
-	  activeImage: 0
+	  activeImage: 0,
+	  anim: 'slide',
+	  timingFunc: 'ease',
+	  duration: 500,
+	  delay: 0
 	};
 	exports.default = Slider;
 
@@ -21714,111 +21744,20 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 179 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	var _react = __webpack_require__(1);
-
-	var _react2 = _interopRequireDefault(_react);
-
-	var _item = __webpack_require__(180);
-
-	var _item2 = _interopRequireDefault(_item);
-
-	var _image = __webpack_require__(184);
-
-	var _image2 = _interopRequireDefault(_image);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var Item = function (_React$Component) {
-	  _inherits(Item, _React$Component);
-
-	  function Item() {
-	    _classCallCheck(this, Item);
-
-	    return _possibleConstructorReturn(this, (Item.__proto__ || Object.getPrototypeOf(Item)).apply(this, arguments));
-	  }
-
-	  _createClass(Item, [{
-	    key: 'render',
-	    value: function render() {
-	      var _props = this.props,
-	          src = _props.src,
-	          current = _props.current,
-	          next = _props.next,
-	          loaded = _props.loaded;
-
-	      var itemClassName = void 0;
-	      var image = void 0;
-
-	      if (next) {
-	        itemClassName = _item2.default.item + ' ' + _item2.default.item_state_active;
-	      } else if (current) {
-	        itemClassName = _item2.default.item + ' ' + _item2.default.item_state_current;
-	      } else {
-	        itemClassName = _item2.default.item;
-	      }
-
-	      if (loaded) {
-	        image = _react2.default.createElement('img', { className: _image2.default.image, src: src, alt: '' });
-	      } else {
-	        image = _react2.default.createElement('img', {
-	          className: _image2.default.image + ' ' + _image2.default.image_state_preview,
-	          style: {
-	            background: 'url(' + src + ') no-repeat 50% 50%',
-	            backgroundSize: 'contain'
-	          }
-	        });
-	      }
-	      return _react2.default.createElement(
-	        'li',
-	        { className: itemClassName },
-	        image
-	      );
-	    }
-	  }]);
-
-	  return Item;
-	}(_react2.default.Component);
-
-	Item.propTypes = {
-	  src: _react2.default.PropTypes.string,
-	  current: _react2.default.PropTypes.bool,
-	  next: _react2.default.PropTypes.bool,
-	  loaded: _react2.default.PropTypes.bool
-	};
-	exports.default = Item;
-
-/***/ },
-/* 180 */
-/***/ function(module, exports, __webpack_require__) {
-
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(181);
+	var content = __webpack_require__(180);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(183)(content, {"singleton":true});
+	var update = __webpack_require__(182)(content, {"singleton":true});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
 		// When the styles change, update the <style> tags
 		if(!content.locals) {
-			module.hot.accept("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./item.css", function() {
-				var newContent = require("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./item.css");
+			module.hot.accept("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./list.css", function() {
+				var newContent = require("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./list.css");
 				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 				update(newContent);
 			});
@@ -21828,24 +21767,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 181 */
+/* 180 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(182)();
+	exports = module.exports = __webpack_require__(181)();
 	// imports
 
 
 	// module
-	exports.push([module.id, "._1zM0aMsnXDae{\n    position: absolute;\n    left: 100%;\n    top: 0;\n    width: 100%;\n    height: 100%;\n    transition: left 1s ease-out;\n}\n._oGCAkHFYg37J{\n    z-index: 1;\n    left: 0;\n}\n._oGCAkHFYg37J{\n    z-index: 1;\n    left: -100%;\n}\n", ""]);
+	exports.push([module.id, "._1XRY_2WbsVn_{\n    position: relative;\n    overflow: hidden;\n    width: 800px;\n    height: 500px;\n    margin: 0 auto;\n    padding: 0;\n    border: 1px solid #333;\n    background-color: #eee;\n    list-style: none;\n}\n", ""]);
 
 	// exports
 	exports.locals = {
-		"item": "_1zM0aMsnXDae",
-		"item_state_active": "_oGCAkHFYg37J"
+		"list": "_1XRY_2WbsVn_"
 	};
 
 /***/ },
-/* 182 */
+/* 181 */
 /***/ function(module, exports) {
 
 	/*
@@ -21901,7 +21839,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 183 */
+/* 182 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -22153,16 +22091,226 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
+/* 183 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _utils = __webpack_require__(184);
+
+	var _item = __webpack_require__(185);
+
+	var _item2 = _interopRequireDefault(_item);
+
+	var _image = __webpack_require__(187);
+
+	var _image2 = _interopRequireDefault(_image);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var Item = function (_React$Component) {
+	  _inherits(Item, _React$Component);
+
+	  function Item() {
+	    _classCallCheck(this, Item);
+
+	    return _possibleConstructorReturn(this, (Item.__proto__ || Object.getPrototypeOf(Item)).apply(this, arguments));
+	  }
+
+	  _createClass(Item, [{
+	    key: 'render',
+	    value: function render() {
+	      var _props = this.props,
+	          src = _props.src,
+	          initial = _props.initial,
+	          current = _props.current,
+	          previous = _props.previous,
+	          loaded = _props.loaded,
+	          playing = _props.playing,
+	          anim = _props.anim,
+	          func = _props.func,
+	          duration = _props.duration;
+
+
+	      var itemClassName = void 0;
+	      var itemStyle = {};
+	      var image = void 0;
+
+	      if (initial) {
+	        itemClassName = _item2.default.item + ' ' + _item2.default.item_display_block;
+	      } else if (previous && playing) {
+	        itemClassName = _item2.default.item + ' ' + _item2.default.item_position_previous;
+	        itemStyle = {
+	          animationDuration: duration + 'ms',
+	          WebkitAnimationDuration: duration + 'ms',
+	          animationTimingFunction: func,
+	          WebkitAnimationTimingFunction: func
+	        };
+	      } else if (current) {
+	        if (playing) {
+	          itemClassName = _item2.default.item + ' ' + _item2.default.item_display_block + ' ' + _item2.default.item_position_current;
+	          itemStyle = {
+	            animationDuration: duration + 'ms',
+	            WebkitAnimationDuration: duration + 'ms',
+	            animationTimingFunction: func,
+	            WebkitAnimationTimingFunction: func
+	          };
+	        } else {
+	          itemClassName = _item2.default.item + ' ' + _item2.default.item_display_block;
+	        }
+	      } else {
+	        itemClassName = _item2.default.item;
+	      }
+
+	      if (loaded) {
+	        image = _react2.default.createElement('img', { className: _image2.default.image, src: src, alt: '' });
+	      } else {
+	        image = _react2.default.createElement('img', {
+	          className: _image2.default.image + ' ' + _image2.default.image_state_preview,
+	          style: {
+	            background: 'url(' + src + ') no-repeat 50% 50%',
+	            backgroundSize: 'contain'
+	          }
+	        });
+	      }
+
+	      return _react2.default.createElement(
+	        'li',
+	        { className: itemClassName, style: itemStyle },
+	        image
+	      );
+	    }
+	  }]);
+
+	  return Item;
+	}(_react2.default.Component);
+
+	Item.propTypes = {
+	  src: _react2.default.PropTypes.string,
+	  current: _react2.default.PropTypes.bool,
+	  previous: _react2.default.PropTypes.bool,
+	  loaded: _react2.default.PropTypes.bool,
+	  playing: _react2.default.PropTypes.bool,
+	  duration: _react2.default.PropTypes.number,
+	  func: _react2.default.PropTypes.string,
+	  anim: _react2.default.PropTypes.string
+	};
+	exports.default = Item;
+
+/***/ },
 /* 184 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var directions = exports.directions = {
+	  PREV: 0,
+	  NEXT: 1
+	};
+
+	var downloadState = exports.downloadState = {
+	  PENDING: 'pending',
+	  LOADING: 'loading',
+	  LOADED: 'loaded',
+	  FAILED: 'failed'
+	};
+
+	var animationState = exports.animationState = {
+	  STOPPED: 'stopped',
+	  PLAYING: 'playing'
+	};
+
+	var timingFunctionList = ['ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear', 'step-start', 'step-end'];
+
+	var animationFunctionList = ['slide', 'fade'];
+
+	var getTimingFunction = exports.getTimingFunction = function getTimingFunction(name) {
+	  var index = timingFunctionList.indexOf(name.toLowerCase());
+	  return timingFunctionList[index < 0 ? 0 : index];
+	};
+
+	var getAnimationFunction = exports.getAnimationFunction = function getAnimationFunction(name) {
+	  var index = animationFunctionList.indexOf(name.toLowerCase());
+	  return animationFunctionList[index < 0 ? 0 : index];
+	};
+
+/***/ },
+/* 185 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(185);
+	var content = __webpack_require__(186);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(183)(content, {"singleton":true});
+	var update = __webpack_require__(182)(content, {"singleton":true});
+	if(content.locals) module.exports = content.locals;
+	// Hot Module Replacement
+	if(false) {
+		// When the styles change, update the <style> tags
+		if(!content.locals) {
+			module.hot.accept("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./item.css", function() {
+				var newContent = require("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./item.css");
+				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+				update(newContent);
+			});
+		}
+		// When the module is disposed, remove the <style> tags
+		module.hot.dispose(function() { update(); });
+	}
+
+/***/ },
+/* 186 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(181)();
+	// imports
+
+
+	// module
+	exports.push([module.id, "@-webkit-keyframes _VazxRFV68w1v{\n    from {left: 100%;}\n    to {left: 0;}\n}\n@keyframes _VazxRFV68w1v{\n    from {left: 100%;}\n    to {left: 0;}\n}\n@-webkit-keyframes _1DU1uMbh0J6m{\n    from {left: 0;}\n    to {left: -100%;}\n}\n@keyframes _1DU1uMbh0J6m{\n    from {left: 0;}\n    to {left: -100%;}\n}\n\n._1zM0aMsnXDae{\n    position: absolute;\n    left: 0;\n    top: 0;\n    width: 100%;\n    height: 100%;\n    display: none;\n}\n._17CSMcLpcX9F{\n    display: block;\n}\n._208PNqIKZYaZ{\n    left: 100%;\n    animation-name: _VazxRFV68w1v;\n    -webkit-animation-name: _VazxRFV68w1v;\n}\n._1RTYzE9deHH_{\n    display: block;\n    animation-name: _1DU1uMbh0J6m;\n    -webkit-animation-name: _1DU1uMbh0J6m;\n}\n", ""]);
+
+	// exports
+	exports.locals = {
+		"item": "_1zM0aMsnXDae",
+		"item_display_block": "_17CSMcLpcX9F",
+		"item_position_current": "_208PNqIKZYaZ",
+		"from-right-to-left-in": "_VazxRFV68w1v",
+		"item_position_previous": "_1RTYzE9deHH_",
+		"from-right-to-left-out": "_1DU1uMbh0J6m"
+	};
+
+/***/ },
+/* 187 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// style-loader: Adds some css to the DOM by adding a <style> tag
+
+	// load the styles
+	var content = __webpack_require__(188);
+	if(typeof content === 'string') content = [[module.id, content, '']];
+	// add the styles to the DOM
+	var update = __webpack_require__(182)(content, {"singleton":true});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -22179,10 +22327,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 185 */
+/* 188 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(182)();
+	exports = module.exports = __webpack_require__(181)();
 	// imports
 
 
@@ -22193,48 +22341,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.locals = {
 		"image": "_1qr8sHHPe70p",
 		"image_state_preview": "_3nEAaKSe_r_s"
-	};
-
-/***/ },
-/* 186 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// style-loader: Adds some css to the DOM by adding a <style> tag
-
-	// load the styles
-	var content = __webpack_require__(187);
-	if(typeof content === 'string') content = [[module.id, content, '']];
-	// add the styles to the DOM
-	var update = __webpack_require__(183)(content, {"singleton":true});
-	if(content.locals) module.exports = content.locals;
-	// Hot Module Replacement
-	if(false) {
-		// When the styles change, update the <style> tags
-		if(!content.locals) {
-			module.hot.accept("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./list.css", function() {
-				var newContent = require("!!./../../node_modules/css-loader/index.js?module&localIdentName=_[hash:base64:12]!./list.css");
-				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-				update(newContent);
-			});
-		}
-		// When the module is disposed, remove the <style> tags
-		module.hot.dispose(function() { update(); });
-	}
-
-/***/ },
-/* 187 */
-/***/ function(module, exports, __webpack_require__) {
-
-	exports = module.exports = __webpack_require__(182)();
-	// imports
-
-
-	// module
-	exports.push([module.id, "._1XRY_2WbsVn_{\n    position: relative;\n    overflow: hidden;\n    width: 800px;\n    height: 500px;\n    margin: 0 auto;\n    padding: 0;\n    border: 1px solid #333;\n    background-color: #eee;\n    list-style: none;\n}\n", ""]);
-
-	// exports
-	exports.locals = {
-		"list": "_1XRY_2WbsVn_"
 	};
 
 /***/ }

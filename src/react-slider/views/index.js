@@ -1,42 +1,47 @@
+import ls from '../../css/list.css';
 import React from 'react';
 import Item from './Item/index';
-import ls from '../../css/list.css';
+import {
+  directions,
+  downloadState,
+  animationState,
+  getTimingFunction,
+  getAnimationFunction
+} from '../utils';
 
-const directions = {
-  PREV: 0,
-  NEXT: 1
-}
-
-const status = {
-  PENDING: 'pending',
-  LOADING: 'loading',
-  LOADED: 'loaded',
-  FAILED: 'failed'
-};
 
 class Slider extends React.Component {
 
   static propTypes = {
     imageList: React.PropTypes.array.isRequired,
-    activeImage: React.PropTypes.number
+    activeImage: React.PropTypes.number,
+    anim: React.PropTypes.string,
+    timingFunc: React.PropTypes.string,
+    duration: React.PropTypes.number,
+    delay: React.PropTypes.number
   };
 
   static defaultProps = {
-    activeImage: 0
-  }
+    activeImage: 0,
+    anim: 'slide',
+    timingFunc: 'ease',
+    duration: 500,
+    delay: 0
+  };
 
   constructor(props) {
     super(props);
     const {imageList, activeImage} = props;
-    let load = [];
+    let downloadList = [];
     let index = activeImage < 0 || activeImage >= imageList.length ? 0 : activeImage;
     for (let i = 0; i < imageList.length; i++) {
-      load.push(i === index ? status.LOADING : status.PENDING);
+      downloadList.push(i === index ? downloadState.LOADING : downloadState.PENDING);
     }
     this.state = {
-      load: load,
-      currIndex: null,
-      nextIndex: index
+      downloadList: downloadList,
+      animation: animationState.STOPPED,
+      currIndex: index,
+      prevIndex: -1
     };
   }
 
@@ -45,10 +50,13 @@ class Slider extends React.Component {
   }
 
   componentDidUpdate() {
-    const {nextIndex, load} = this.state;
-    if (load[nextIndex] === status.LOADING) {
+    const {currIndex, downloadList, animation} = this.state;
+    if (downloadList[currIndex] === downloadState.LOADING) {
       this.createLoader();
-    }
+    };
+    if (animation === animationState.PLAYING) {
+        setTimeout(::this.stopAnimation, this.props.duration);
+    };
   }
 
   createLoader() {
@@ -56,7 +64,7 @@ class Slider extends React.Component {
     this.img = new Image();
     this.img.onload = ::this.handleLoad;
     this.img.onerror = ::this.handleError;
-    this.img.src = this.props.imageList[this.state.nextIndex].src;
+    this.img.src = this.props.imageList[this.state.currIndex].src;
   }
 
   destroyLoader() {
@@ -68,32 +76,34 @@ class Slider extends React.Component {
   }
 
   handleLoad() {
-    const {nextIndex, load} = this.state;
+    const {currIndex, downloadList} = this.state;
     this.destroyLoader();
-    load[nextIndex] = status.LOADED;
-    this.setState({load: load});
+    downloadList[currIndex] = downloadState.LOADED;
+    this.setState({downloadList: downloadList});
   }
 
   handleError() {
-    const {nextIndex, load} = this.state;
+    const {currIndex, downloadList} = this.state;
     this.destroyLoader();
-    load[nextIndex] = status.FAILED;
-    this.setState({load: load});
+    downloadList[currIndex] = downloadState.FAILED;
+    this.setState({downloadList: downloadList});
   }
 
   onButtonClick(direction) {
-    const {nextIndex, load} = this.state;
-    let newNextIndex;
+    const {currIndex, downloadList, animation} = this.state;
+    if (animation === animationState.PLAYING) return;
+    let nextIndex;
     if (direction === directions.NEXT) {
-      newNextIndex = nextIndex + 1 < load.length ? nextIndex + 1 : 0;
+      nextIndex = currIndex + 1 < downloadList.length ? currIndex + 1 : 0;
     } else if (direction === directions.PREV) {
-      newNextIndex = nextIndex - 1 < 0 ? load.length - 1 : nextIndex - 1;
+      nextIndex = currIndex - 1 < 0 ? downloadList.length - 1 : currIndex - 1;
     }
-    load[newNextIndex] = load[newNextIndex] !== status.LOADED ? status.LOADING : status.LOADED;
+    downloadList[nextIndex] = downloadList[nextIndex] !== downloadState.LOADED ? downloadState.LOADING : downloadState.LOADED;
     this.setState({
-      load: load,
-      nextIndex: newNextIndex,
-      currIndex: nextIndex
+      downloadList: downloadList,
+      currIndex: nextIndex,
+      prevIndex: currIndex,
+      animation: animationState.PLAYING
     });
   }
 
@@ -105,33 +115,51 @@ class Slider extends React.Component {
     this.onButtonClick(directions.PREV);
   }
 
+  stopAnimation() {
+    this.setState({animation: animationState.STOPPED});
+  }
+
   render() {
     const items = [];
-    const {imageList} = this.props;
-    const {currIndex, nextIndex, load} = this.state;
+    const {imageList, duration, timingFunc, anim} = this.props;
+    const {currIndex, prevIndex, downloadList, animation} = this.state;
     for (let i = 0; i < imageList.length; i++) {
-      if (load[i] === status.LOADING) {
+      if (downloadList[i] === downloadState.LOADING) {
         items.push(<Item
           key={i}
           src={imageList[i].data}
+          initial={prevIndex < 0}
           current={i === currIndex}
-          next={i === nextIndex}
+          previous={i === prevIndex}
+          duration={duration}
+          func={getTimingFunction(timingFunc)}
+          anim={getAnimationFunction(anim)}
           loaded={false}
+          playing={animation === animationState.PLAYING}
         />);
-      } else if (load[i] === status.LOADED) {
+      } else if (downloadList[i] === downloadState.LOADED) {
         items.push(<Item
           key={i}
           src={imageList[i].src}
+          initial={prevIndex < 0}
           current={i === currIndex}
-          next={i === nextIndex}
+          previous={i === prevIndex}
+          duration={duration}
+          func={getTimingFunction(timingFunc)}
+          anim={getAnimationFunction(anim)}
           loaded={true}
+          playing={animation === animationState.PLAYING}
         />);
       }
     };
     return (
       <div>
-        <button onClick={::this.onButtonPrevClick}>prev image</button>
-        <button onClick={::this.onButtonNextClick}>next image</button>
+        <button
+          onClick={::this.onButtonPrevClick}
+        >prev image</button>
+        <button
+          onClick={::this.onButtonNextClick}
+        >next image</button>
         <ul className={ls.list}>
           {items}
         </ul>
