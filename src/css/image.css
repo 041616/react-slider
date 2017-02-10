@@ -8,13 +8,14 @@
     max-height: 100%;
     margin: auto;
 }
-.image_state_preview{
-    bottom: auto;
-    right: auto;
-    width: 100%;
-    height: 100%;
-    max-width: none;
-    max-height: none;
+
+.thumbnail{
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
     -webkit-filter: blur(5px);
     filter: blur(5px);
 }

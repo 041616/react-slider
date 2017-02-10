@@ -21542,7 +21542,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var index = activeImage < 0 || activeImage >= imageList.length ? 0 : activeImage;
 	    for (var i = 0; i < imageList.length; i++) {
 	      downloadList.push(i === index ? _utils.downloadState.LOADING : _utils.downloadState.PENDING);
-	    }
+	    };
 	    _this.state = {
 	      downloadList: downloadList,
 	      animation: _utils.animationState.STOPPED,
@@ -21565,7 +21565,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          downloadList = _state.downloadList,
 	          animation = _state.animation;
 
-	      if (downloadList[currIndex] === _utils.downloadState.LOADING && animation === _utils.animationState.STOPPED) {
+	      if (downloadList[currIndex] === _utils.downloadState.LOADING) {
 	        this.createLoader();
 	      };
 	      if (animation === _utils.animationState.PLAYING) {
@@ -21576,10 +21576,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'createLoader',
 	    value: function createLoader() {
 	      this.destroyLoader();
+	      var imageList = this.props.imageList;
+	      var currIndex = this.state.currIndex;
+
 	      this.img = new Image();
 	      this.img.onload = this.handleLoad.bind(this);
 	      this.img.onerror = this.handleError.bind(this);
-	      this.img.src = this.props.imageList[this.state.currIndex].src;
+	      this.img.src = imageList[currIndex].src;
 	    }
 	  }, {
 	    key: 'destroyLoader',
@@ -21595,8 +21598,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function handleLoad() {
 	      var _state2 = this.state,
 	          currIndex = _state2.currIndex,
-	          downloadList = _state2.downloadList;
+	          downloadList = _state2.downloadList,
+	          animation = _state2.animation;
 
+	      if (animation === _utils.animationState.PLAYING) return;
 	      this.destroyLoader();
 	      downloadList[currIndex] = _utils.downloadState.LOADED;
 	      this.setState({ downloadList: downloadList });
@@ -21606,8 +21611,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function handleError() {
 	      var _state3 = this.state,
 	          currIndex = _state3.currIndex,
-	          downloadList = _state3.downloadList;
+	          downloadList = _state3.downloadList,
+	          animation = _state3.animation;
 
+	      if (animation === _utils.animationState.PLAYING) return;
 	      this.destroyLoader();
 	      downloadList[currIndex] = _utils.downloadState.FAILED;
 	      this.setState({ downloadList: downloadList });
@@ -21658,7 +21665,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	          imageList = _props.imageList,
 	          duration = _props.duration,
 	          timingFunc = _props.timingFunc,
-	          anim = _props.anim;
+	          anim = _props.anim,
+	          width = _props.width,
+	          height = _props.height;
 	      var _state5 = this.state,
 	          currIndex = _state5.currIndex,
 	          prevIndex = _state5.prevIndex,
@@ -21669,7 +21678,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (downloadList[i] === _utils.downloadState.LOADING) {
 	          items.push(_react2.default.createElement(_index2.default, {
 	            key: i,
-	            src: imageList[i].data,
+	            src: '',
+	            data: imageList[i].data,
 	            initial: prevIndex < 0,
 	            current: i === currIndex,
 	            previous: i === prevIndex,
@@ -21677,12 +21687,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	            func: (0, _utils.getTimingFunction)(timingFunc),
 	            anim: (0, _utils.getAnimationFunction)(anim),
 	            loaded: false,
-	            playing: animation === _utils.animationState.PLAYING
+	            playing: animation === _utils.animationState.PLAYING,
+	            maxwidth: width,
+	            maxheight: height
 	          }));
 	        } else if (downloadList[i] === _utils.downloadState.LOADED) {
 	          items.push(_react2.default.createElement(_index2.default, {
 	            key: i,
 	            src: imageList[i].src,
+	            data: imageList[i].data,
 	            initial: prevIndex < 0,
 	            current: i === currIndex,
 	            previous: i === prevIndex,
@@ -21690,7 +21703,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	            func: (0, _utils.getTimingFunction)(timingFunc),
 	            anim: (0, _utils.getAnimationFunction)(anim),
 	            loaded: true,
-	            playing: animation === _utils.animationState.PLAYING
+	            playing: animation === _utils.animationState.PLAYING,
+	            maxwidth: width,
+	            maxheight: height
 	          }));
 	        }
 	      };
@@ -22138,6 +22153,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function render() {
 	      var _props = this.props,
 	          src = _props.src,
+	          data = _props.data,
 	          initial = _props.initial,
 	          current = _props.current,
 	          previous = _props.previous,
@@ -22145,12 +22161,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	          playing = _props.playing,
 	          anim = _props.anim,
 	          func = _props.func,
-	          duration = _props.duration;
+	          duration = _props.duration,
+	          maxwidth = _props.maxwidth,
+	          maxheight = _props.maxheight;
 
 
 	      var itemClassName = void 0;
 	      var itemStyle = {};
-	      var image = void 0;
 
 	      if (initial) {
 	        itemClassName = _item2.default.item + ' ' + _item2.default.item_display_block;
@@ -22164,7 +22181,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        };
 	      } else if (current) {
 	        if (playing) {
-	          itemClassName = _item2.default.item + ' ' + _item2.default.item_display_block + ' ' + _item2.default.item_position_current;
+	          itemClassName = _item2.default.item + ' ' + _item2.default.item_position_current;
 	          itemStyle = {
 	            animationDuration: duration + 'ms',
 	            WebkitAnimationDuration: duration + 'ms',
@@ -22178,22 +22195,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	        itemClassName = _item2.default.item;
 	      }
 
-	      if (loaded) {
-	        image = _react2.default.createElement('img', { className: _image2.default.image, src: src, alt: '' });
-	      } else {
-	        image = _react2.default.createElement('img', {
-	          className: _image2.default.image + ' ' + _image2.default.image_state_preview,
-	          style: {
-	            background: 'url(' + src + ') no-repeat 50% 50%',
-	            backgroundSize: 'contain'
-	          }
-	        });
-	      }
-
 	      return _react2.default.createElement(
 	        'li',
 	        { className: itemClassName, style: itemStyle },
-	        image
+	        _react2.default.createElement('span', {
+	          className: _image2.default.thumbnail,
+	          style: {
+	            maxWidth: maxwidth,
+	            maxHeight: maxheight,
+	            background: 'url(' + data + ') no-repeat 50% 50%',
+	            backgroundSize: 'contain'
+	          }
+	        }),
+	        loaded ? _react2.default.createElement('img', { className: _image2.default.image, src: src, alt: '' }) : null
 	      );
 	    }
 	  }]);
@@ -22288,7 +22302,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 	// module
-	exports.push([module.id, "@-webkit-keyframes _VazxRFV68w1v{\n    from {left: 100%;}\n    to {left: 0;}\n}\n@keyframes _VazxRFV68w1v{\n    from {left: 100%;}\n    to {left: 0;}\n}\n@-webkit-keyframes _1DU1uMbh0J6m{\n    from {left: 0;}\n    to {left: -100%;}\n}\n@keyframes _1DU1uMbh0J6m{\n    from {left: 0;}\n    to {left: -100%;}\n}\n\n._1zM0aMsnXDae{\n    position: absolute;\n    left: 0;\n    top: 0;\n    width: 100%;\n    height: 100%;\n    display: none;\n}\n._17CSMcLpcX9F{\n    display: block;\n}\n._208PNqIKZYaZ{\n    left: 100%;\n    animation-name: _VazxRFV68w1v;\n    -webkit-animation-name: _VazxRFV68w1v;\n}\n._1RTYzE9deHH_{\n    display: block;\n    animation-name: _1DU1uMbh0J6m;\n    -webkit-animation-name: _1DU1uMbh0J6m;\n}\n", ""]);
+	exports.push([module.id, "@-webkit-keyframes _VazxRFV68w1v{\n    from {left: 100%;}\n    to {left: 0;}\n}\n@keyframes _VazxRFV68w1v{\n    from {left: 100%;}\n    to {left: 0;}\n}\n@-webkit-keyframes _1DU1uMbh0J6m{\n    from {left: 0;}\n    to {left: -100%;}\n}\n@keyframes _1DU1uMbh0J6m{\n    from {left: 0;}\n    to {left: -100%;}\n}\n\n._1zM0aMsnXDae{\n    position: absolute;\n    left: 0;\n    top: 0;\n    width: 100%;\n    height: 100%;\n    display: none;\n}\n._17CSMcLpcX9F{\n    display: block;\n}\n._208PNqIKZYaZ{\n    display: block;\n    animation-name: _VazxRFV68w1v;\n    -webkit-animation-name: _VazxRFV68w1v;\n    animation-fill-mode: forwards;\n    -webkit-animation-fill-mode: forwards;\n}\n._1RTYzE9deHH_{\n    display: block;\n    left: -100%;\n    animation-name: _1DU1uMbh0J6m;\n    -webkit-animation-name: _1DU1uMbh0J6m;\n    animation-fill-mode: forwards;\n    -webkit-animation-fill-mode: forwards;\n}\n", ""]);
 
 	// exports
 	exports.locals = {
@@ -22335,12 +22349,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 	// module
-	exports.push([module.id, "._1qr8sHHPe70p{\n    position: absolute;\n    top: 0;\n    left: 0;\n    bottom: 0;\n    right: 0;\n    max-width: 100%;\n    max-height: 100%;\n    margin: auto;\n}\n._3nEAaKSe_r_s{\n    bottom: auto;\n    right: auto;\n    width: 100%;\n    height: 100%;\n    max-width: none;\n    max-height: none;\n    -webkit-filter: blur(5px);\n    filter: blur(5px);\n}\n", ""]);
+	exports.push([module.id, "._1qr8sHHPe70p{\n    position: absolute;\n    top: 0;\n    left: 0;\n    bottom: 0;\n    right: 0;\n    max-width: 100%;\n    max-height: 100%;\n    margin: auto;\n}\n\n._1Q_dkEOM0qTk{\n    position: absolute;\n    left: 0;\n    top: 0;\n    right: 0;\n    bottom: 0;\n    margin: auto;\n    -webkit-filter: blur(5px);\n    filter: blur(5px);\n}\n", ""]);
 
 	// exports
 	exports.locals = {
 		"image": "_1qr8sHHPe70p",
-		"image_state_preview": "_3nEAaKSe_r_s"
+		"thumbnail": "_1Q_dkEOM0qTk"
 	};
 
 /***/ }

@@ -19,13 +19,13 @@ class Item extends React.Component {
 
   render() {
     const {
-      src, initial, current, previous, loaded,
-      playing, anim, func, duration
+      src, data, initial, current, previous, loaded,
+      playing, anim, func, duration, maxwidth,
+      maxheight
     } = this.props;
 
     let itemClassName;
     let itemStyle = {};
-    let image;
 
     if (initial) {
       itemClassName = `${it.item} ${it.item_display_block}`;
@@ -39,7 +39,7 @@ class Item extends React.Component {
       }
     } else if (current) {
       if (playing) {
-        itemClassName = `${it.item} ${it.item_display_block} ${it.item_position_current}`;
+        itemClassName = `${it.item} ${it.item_position_current}`;
         itemStyle = {
           animationDuration: `${duration}ms`,
           WebkitAnimationDuration: `${duration}ms`,
@@ -53,21 +53,18 @@ class Item extends React.Component {
       itemClassName = it.item;
     }
 
-    if (loaded) {
-      image = <img className={im.image} src={src} alt=""/>;
-    } else {
-      image = <img
-        className={`${im.image} ${im.image_state_preview}`}
-        style={{
-          background: `url(${src}) no-repeat 50% 50%`,
-          backgroundSize: 'contain'
-        }}
-      />;
-    }
-
     return (
       <li className={itemClassName} style={itemStyle}>
-        {image}
+        <span
+          className={im.thumbnail}
+          style={{
+            maxWidth: maxwidth,
+            maxHeight: maxheight,
+            background: `url(${data}) no-repeat 50% 50%`,
+            backgroundSize: 'contain'
+          }}
+        ></span>
+        {loaded ? <img className={im.image} src={src} alt=""/> : null}
       </li>
     );
   }

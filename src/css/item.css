@@ -27,12 +27,17 @@
     display: block;
 }
 .item_position_current{
-    left: 100%;
+    display: block;
     animation-name: from-right-to-left-in;
     -webkit-animation-name: from-right-to-left-in;
+    animation-fill-mode: forwards;
+    -webkit-animation-fill-mode: forwards;
 }
 .item_position_previous{
     display: block;
+    left: -100%;
     animation-name: from-right-to-left-out;
     -webkit-animation-name: from-right-to-left-out;
+    animation-fill-mode: forwards;
+    -webkit-animation-fill-mode: forwards;
 }

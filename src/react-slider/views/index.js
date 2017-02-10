@@ -36,7 +36,7 @@ class Slider extends React.Component {
     let index = activeImage < 0 || activeImage >= imageList.length ? 0 : activeImage;
     for (let i = 0; i < imageList.length; i++) {
       downloadList.push(i === index ? downloadState.LOADING : downloadState.PENDING);
-    }
+    };
     this.state = {
       downloadList: downloadList,
       animation: animationState.STOPPED,
@@ -55,16 +55,18 @@ class Slider extends React.Component {
       this.createLoader();
     };
     if (animation === animationState.PLAYING) {
-        setTimeout(::this.stopAnimation, this.props.duration);
+      setTimeout(::this.stopAnimation, this.props.duration);
     };
   }
 
   createLoader() {
     this.destroyLoader();
+    const {imageList} = this.props;
+    const {currIndex} = this.state;
     this.img = new Image();
     this.img.onload = ::this.handleLoad;
     this.img.onerror = ::this.handleError;
-    this.img.src = this.props.imageList[this.state.currIndex].src;
+    this.img.src = imageList[currIndex].src;
   }
 
   destroyLoader() {
@@ -76,14 +78,16 @@ class Slider extends React.Component {
   }
 
   handleLoad() {
-    const {currIndex, downloadList} = this.state;
+    const {currIndex, downloadList, animation} = this.state;
+    if (animation === animationState.PLAYING) return;
     this.destroyLoader();
     downloadList[currIndex] = downloadState.LOADED;
     this.setState({downloadList: downloadList});
   }
 
   handleError() {
-    const {currIndex, downloadList} = this.state;
+    const {currIndex, downloadList, animation} = this.state;
+    if (animation === animationState.PLAYING) return;
     this.destroyLoader();
     downloadList[currIndex] = downloadState.FAILED;
     this.setState({downloadList: downloadList});
@@ -121,13 +125,14 @@ class Slider extends React.Component {
 
   render() {
     const items = [];
-    const {imageList, duration, timingFunc, anim} = this.props;
+    const {imageList, duration, timingFunc, anim, width, height} = this.props;
     const {currIndex, prevIndex, downloadList, animation} = this.state;
     for (let i = 0; i < imageList.length; i++) {
       if (downloadList[i] === downloadState.LOADING) {
         items.push(<Item
           key={i}
-          src={imageList[i].data}
+          src=""
+          data={imageList[i].data}
           initial={prevIndex < 0}
           current={i === currIndex}
           previous={i === prevIndex}
@@ -136,11 +141,14 @@ class Slider extends React.Component {
           anim={getAnimationFunction(anim)}
           loaded={false}
           playing={animation === animationState.PLAYING}
+          maxwidth={width}
+          maxheight={height}
         />);
       } else if (downloadList[i] === downloadState.LOADED) {
         items.push(<Item
           key={i}
           src={imageList[i].src}
+          data={imageList[i].data}
           initial={prevIndex < 0}
           current={i === currIndex}
           previous={i === prevIndex}
@@ -149,6 +157,8 @@ class Slider extends React.Component {
           anim={getAnimationFunction(anim)}
           loaded={true}
           playing={animation === animationState.PLAYING}
+          maxwidth={width}
+          maxheight={height}
         />);
       }
     };
@@ -160,9 +170,7 @@ class Slider extends React.Component {
         <button
           onClick={::this.onButtonNextClick}
         >next image</button>
-        <ul className={ls.list}>
-          {items}
-        </ul>
+        <ul className={ls.list}>{items}</ul>
       </div>
     );
   }
