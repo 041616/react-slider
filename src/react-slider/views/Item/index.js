@@ -8,20 +8,21 @@ class Item extends React.Component {
 
   static propTypes = {
     src: React.PropTypes.string,
-    current: React.PropTypes.bool,
-    previous: React.PropTypes.bool,
+    index: React.PropTypes.number,
+    currIndex: React.PropTypes.number,
+    prevIndex: React.PropTypes.number,
     loaded: React.PropTypes.bool,
     playing: React.PropTypes.bool,
     duration: React.PropTypes.number,
+    lastIndex: React.PropTypes.number,
     func: React.PropTypes.string,
     anim: React.PropTypes.string
   };
 
   render() {
     const {
-      src, data, initial, current, previous, loaded,
-      playing, anim, func, duration, maxwidth,
-      maxheight
+      src, data, initial, index, currIndex, prevIndex, loaded,
+      playing, anim, func, duration, maxwidth, maxheight, lastIndex
     } = this.props;
 
     let itemClassName;
@@ -29,17 +30,33 @@ class Item extends React.Component {
 
     if (initial) {
       itemClassName = `${it.item} ${it.item_display_block}`;
-    } else if (previous && playing) {
-      itemClassName = `${it.item} ${it.item_position_previous}`;
+    } else if (index === prevIndex && playing) {
+      if (currIndex === 0 && prevIndex === lastIndex) {
+        itemClassName = `${it.item} ${it.item_position_previous_to_left}`;
+      } else if (currIndex === lastIndex && prevIndex === 0) {
+        itemClassName = `${it.item} ${it.item_position_previous_to_right}`;
+      } else if (currIndex - prevIndex > 0) {
+        itemClassName = `${it.item} ${it.item_position_previous_to_left}`;
+      } else {
+        itemClassName = `${it.item} ${it.item_position_previous_to_right}`;
+      }
       itemStyle = {
         animationDuration: `${duration}ms`,
         WebkitAnimationDuration: `${duration}ms`,
         animationTimingFunction: func,
         WebkitAnimationTimingFunction: func
       }
-    } else if (current) {
+    } else if (index === currIndex) {
       if (playing) {
-        itemClassName = `${it.item} ${it.item_position_current}`;
+        if (currIndex === 0 && prevIndex === lastIndex) {
+          itemClassName = `${it.item} ${it.item_position_current_to_left}`;
+        } else if (currIndex === lastIndex && prevIndex === 0) {
+          itemClassName = `${it.item} ${it.item_position_current_to_right}`;
+        } else if (currIndex - prevIndex > 0) {
+          itemClassName = `${it.item} ${it.item_position_current_to_left}`;
+        } else {
+          itemClassName = `${it.item} ${it.item_position_current_to_right}`;
+        }
         itemStyle = {
           animationDuration: `${duration}ms`,
           WebkitAnimationDuration: `${duration}ms`,
@@ -56,15 +73,21 @@ class Item extends React.Component {
     return (
       <li className={itemClassName} style={itemStyle}>
         <span
-          className={im.thumbnail}
+          className={`${im.image} ${im.blur}`}
           style={{
             maxWidth: maxwidth,
             maxHeight: maxheight,
-            background: `url(${data}) no-repeat 50% 50%`,
-            backgroundSize: 'contain'
+            backgroundImage: `url(${data})`
           }}
         ></span>
-        {loaded ? <img className={im.image} src={src} alt=""/> : null}
+        {loaded ? <span
+          className={im.image}
+          style={{
+            maxWidth: maxwidth,
+            maxHeight: maxheight,
+            backgroundImage: `url(${src})`
+          }}
+        ></span> : null}
       </li>
     );
   }

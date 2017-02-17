@@ -59,6 +59,11 @@ class Slider extends React.Component {
     };
   }
 
+  // getContainerWidth() {
+  //   const containerClientRect = this.refs.SliderContainer.getDOMNode().getBoundingClientRect();
+  //   return containerClientRect.right - containerClientRect.left;
+  // }
+
   createLoader() {
     this.destroyLoader();
     const {imageList} = this.props;
@@ -125,52 +130,35 @@ class Slider extends React.Component {
 
   render() {
     const items = [];
-    const {imageList, duration, timingFunc, anim, width, height} = this.props;
+    const {imageList, duration, timingFunc, anim} = this.props;
     const {currIndex, prevIndex, downloadList, animation} = this.state;
+    const params = {
+      initial: prevIndex < 0,
+      duration: duration,
+      func: getTimingFunction(timingFunc),
+      anim: getAnimationFunction(anim),
+      playing: animation === animationState.PLAYING,
+      lastIndex: imageList.length - 1
+    }
     for (let i = 0; i < imageList.length; i++) {
-      if (downloadList[i] === downloadState.LOADING) {
-        items.push(<Item
-          key={i}
-          src=""
-          data={imageList[i].data}
-          initial={prevIndex < 0}
-          current={i === currIndex}
-          previous={i === prevIndex}
-          duration={duration}
-          func={getTimingFunction(timingFunc)}
-          anim={getAnimationFunction(anim)}
-          loaded={false}
-          playing={animation === animationState.PLAYING}
-          maxwidth={width}
-          maxheight={height}
-        />);
+      params.key = i;
+      params.index = i;
+      params.currIndex = currIndex;
+      params.prevIndex = prevIndex;
+      params.data = imageList[i].data;
+      params.maxwidth = imageList[i].width;
+      params.maxheight = imageList[i].height;
+      if (downloadList[i] === downloadState.LOADING || downloadList[i] === downloadState.FAILED) {
+        items.push(<Item src="" loaded={false} {...params}/>);
       } else if (downloadList[i] === downloadState.LOADED) {
-        items.push(<Item
-          key={i}
-          src={imageList[i].src}
-          data={imageList[i].data}
-          initial={prevIndex < 0}
-          current={i === currIndex}
-          previous={i === prevIndex}
-          duration={duration}
-          func={getTimingFunction(timingFunc)}
-          anim={getAnimationFunction(anim)}
-          loaded={true}
-          playing={animation === animationState.PLAYING}
-          maxwidth={width}
-          maxheight={height}
-        />);
+        items.push(<Item src={imageList[i].src} loaded={true} {...params}/>);
       }
     };
     return (
-      <div>
-        <button
-          onClick={::this.onButtonPrevClick}
-        >prev image</button>
-        <button
-          onClick={::this.onButtonNextClick}
-        >next image</button>
-        <ul className={ls.list}>{items}</ul>
+      <div ref="SliderContainer">
+        <button onClick={::this.onButtonPrevClick}>prev image</button>
+        <button onClick={::this.onButtonNextClick}>next image</button>
+        <ul className={ls.list} style={{height: 'none'}}>{items}</ul>
       </div>
     );
   }

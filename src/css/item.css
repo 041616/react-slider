@@ -14,6 +14,22 @@
     from {left: 0;}
     to {left: -100%;}
 }
+@-webkit-keyframes from-left-to-right-in{
+    from {left: -100%;}
+    to {left: 0;}
+}
+@keyframes from-left-to-right-in{
+    from {left: -100%;}
+    to {left: 0;}
+}
+@-webkit-keyframes from-left-to-right-out{
+    from {left: 0;}
+    to {left: 100%;}
+}
+@keyframes from-left-to-right-out{
+    from {left: 0;}
+    to {left: 100%;}
+}
 
 .item{
     position: absolute;
@@ -26,18 +42,33 @@
 .item_display_block{
     display: block;
 }
-.item_position_current{
+.item_position_current_to_left{
     display: block;
     animation-name: from-right-to-left-in;
     -webkit-animation-name: from-right-to-left-in;
     animation-fill-mode: forwards;
     -webkit-animation-fill-mode: forwards;
 }
-.item_position_previous{
+.item_position_previous_to_left{
     display: block;
     left: -100%;
     animation-name: from-right-to-left-out;
     -webkit-animation-name: from-right-to-left-out;
+    animation-fill-mode: forwards;
+    -webkit-animation-fill-mode: forwards;
+}
+.item_position_current_to_right{
+    display: block;
+    animation-name: from-left-to-right-in;
+    -webkit-animation-name: from-left-to-right-in;
+    animation-fill-mode: forwards;
+    -webkit-animation-fill-mode: forwards;
+}
+.item_position_previous_to_right{
+    display: block;
+    left: 100%;
+    animation-name: from-left-to-right-out;
+    -webkit-animation-name: from-left-to-right-out;
     animation-fill-mode: forwards;
     -webkit-animation-fill-mode: forwards;
 }

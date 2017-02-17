@@ -21503,6 +21503,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  value: true
 	});
 
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	var _list = __webpack_require__(179);
@@ -21572,6 +21574,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        setTimeout(this.stopAnimation.bind(this), this.props.duration);
 	      };
 	    }
+
+	    // getContainerWidth() {
+	    //   const containerClientRect = this.refs.SliderContainer.getDOMNode().getBoundingClientRect();
+	    //   return containerClientRect.right - containerClientRect.left;
+	    // }
+
 	  }, {
 	    key: 'createLoader',
 	    value: function createLoader() {
@@ -21665,70 +21673,51 @@ return /******/ (function(modules) { // webpackBootstrap
 	          imageList = _props.imageList,
 	          duration = _props.duration,
 	          timingFunc = _props.timingFunc,
-	          anim = _props.anim,
-	          width = _props.width,
-	          height = _props.height;
+	          anim = _props.anim;
 	      var _state5 = this.state,
 	          currIndex = _state5.currIndex,
 	          prevIndex = _state5.prevIndex,
 	          downloadList = _state5.downloadList,
 	          animation = _state5.animation;
 
+	      var params = {
+	        initial: prevIndex < 0,
+	        duration: duration,
+	        func: (0, _utils.getTimingFunction)(timingFunc),
+	        anim: (0, _utils.getAnimationFunction)(anim),
+	        playing: animation === _utils.animationState.PLAYING,
+	        lastIndex: imageList.length - 1
+	      };
 	      for (var i = 0; i < imageList.length; i++) {
-	        if (downloadList[i] === _utils.downloadState.LOADING) {
-	          items.push(_react2.default.createElement(_index2.default, {
-	            key: i,
-	            src: '',
-	            data: imageList[i].data,
-	            initial: prevIndex < 0,
-	            current: i === currIndex,
-	            previous: i === prevIndex,
-	            duration: duration,
-	            func: (0, _utils.getTimingFunction)(timingFunc),
-	            anim: (0, _utils.getAnimationFunction)(anim),
-	            loaded: false,
-	            playing: animation === _utils.animationState.PLAYING,
-	            maxwidth: width,
-	            maxheight: height
-	          }));
+	        params.key = i;
+	        params.index = i;
+	        params.currIndex = currIndex;
+	        params.prevIndex = prevIndex;
+	        params.data = imageList[i].data;
+	        params.maxwidth = imageList[i].width;
+	        params.maxheight = imageList[i].height;
+	        if (downloadList[i] === _utils.downloadState.LOADING || downloadList[i] === _utils.downloadState.FAILED) {
+	          items.push(_react2.default.createElement(_index2.default, _extends({ src: '', loaded: false }, params)));
 	        } else if (downloadList[i] === _utils.downloadState.LOADED) {
-	          items.push(_react2.default.createElement(_index2.default, {
-	            key: i,
-	            src: imageList[i].src,
-	            data: imageList[i].data,
-	            initial: prevIndex < 0,
-	            current: i === currIndex,
-	            previous: i === prevIndex,
-	            duration: duration,
-	            func: (0, _utils.getTimingFunction)(timingFunc),
-	            anim: (0, _utils.getAnimationFunction)(anim),
-	            loaded: true,
-	            playing: animation === _utils.animationState.PLAYING,
-	            maxwidth: width,
-	            maxheight: height
-	          }));
+	          items.push(_react2.default.createElement(_index2.default, _extends({ src: imageList[i].src, loaded: true }, params)));
 	        }
 	      };
 	      return _react2.default.createElement(
 	        'div',
-	        null,
+	        { ref: 'SliderContainer' },
 	        _react2.default.createElement(
 	          'button',
-	          {
-	            onClick: this.onButtonPrevClick.bind(this)
-	          },
+	          { onClick: this.onButtonPrevClick.bind(this) },
 	          'prev image'
 	        ),
 	        _react2.default.createElement(
 	          'button',
-	          {
-	            onClick: this.onButtonNextClick.bind(this)
-	          },
+	          { onClick: this.onButtonNextClick.bind(this) },
 	          'next image'
 	        ),
 	        _react2.default.createElement(
 	          'ul',
-	          { className: _list2.default.list },
+	          { className: _list2.default.list, style: { height: 'none' } },
 	          items
 	        )
 	      );
@@ -22155,15 +22144,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	          src = _props.src,
 	          data = _props.data,
 	          initial = _props.initial,
-	          current = _props.current,
-	          previous = _props.previous,
+	          index = _props.index,
+	          currIndex = _props.currIndex,
+	          prevIndex = _props.prevIndex,
 	          loaded = _props.loaded,
 	          playing = _props.playing,
 	          anim = _props.anim,
 	          func = _props.func,
 	          duration = _props.duration,
 	          maxwidth = _props.maxwidth,
-	          maxheight = _props.maxheight;
+	          maxheight = _props.maxheight,
+	          lastIndex = _props.lastIndex;
 
 
 	      var itemClassName = void 0;
@@ -22171,17 +22162,33 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      if (initial) {
 	        itemClassName = _item2.default.item + ' ' + _item2.default.item_display_block;
-	      } else if (previous && playing) {
-	        itemClassName = _item2.default.item + ' ' + _item2.default.item_position_previous;
+	      } else if (index === prevIndex && playing) {
+	        if (currIndex === 0 && prevIndex === lastIndex) {
+	          itemClassName = _item2.default.item + ' ' + _item2.default.item_position_previous_to_left;
+	        } else if (currIndex === lastIndex && prevIndex === 0) {
+	          itemClassName = _item2.default.item + ' ' + _item2.default.item_position_previous_to_right;
+	        } else if (currIndex - prevIndex > 0) {
+	          itemClassName = _item2.default.item + ' ' + _item2.default.item_position_previous_to_left;
+	        } else {
+	          itemClassName = _item2.default.item + ' ' + _item2.default.item_position_previous_to_right;
+	        }
 	        itemStyle = {
 	          animationDuration: duration + 'ms',
 	          WebkitAnimationDuration: duration + 'ms',
 	          animationTimingFunction: func,
 	          WebkitAnimationTimingFunction: func
 	        };
-	      } else if (current) {
+	      } else if (index === currIndex) {
 	        if (playing) {
-	          itemClassName = _item2.default.item + ' ' + _item2.default.item_position_current;
+	          if (currIndex === 0 && prevIndex === lastIndex) {
+	            itemClassName = _item2.default.item + ' ' + _item2.default.item_position_current_to_left;
+	          } else if (currIndex === lastIndex && prevIndex === 0) {
+	            itemClassName = _item2.default.item + ' ' + _item2.default.item_position_current_to_right;
+	          } else if (currIndex - prevIndex > 0) {
+	            itemClassName = _item2.default.item + ' ' + _item2.default.item_position_current_to_left;
+	          } else {
+	            itemClassName = _item2.default.item + ' ' + _item2.default.item_position_current_to_right;
+	          }
 	          itemStyle = {
 	            animationDuration: duration + 'ms',
 	            WebkitAnimationDuration: duration + 'ms',
@@ -22199,15 +22206,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	        'li',
 	        { className: itemClassName, style: itemStyle },
 	        _react2.default.createElement('span', {
-	          className: _image2.default.thumbnail,
+	          className: _image2.default.image + ' ' + _image2.default.blur,
 	          style: {
 	            maxWidth: maxwidth,
 	            maxHeight: maxheight,
-	            background: 'url(' + data + ') no-repeat 50% 50%',
-	            backgroundSize: 'contain'
+	            backgroundImage: 'url(' + data + ')'
 	          }
 	        }),
-	        loaded ? _react2.default.createElement('img', { className: _image2.default.image, src: src, alt: '' }) : null
+	        loaded ? _react2.default.createElement('span', {
+	          className: _image2.default.image,
+	          style: {
+	            maxWidth: maxwidth,
+	            maxHeight: maxheight,
+	            backgroundImage: 'url(' + src + ')'
+	          }
+	        }) : null
 	      );
 	    }
 	  }]);
@@ -22217,11 +22230,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	Item.propTypes = {
 	  src: _react2.default.PropTypes.string,
-	  current: _react2.default.PropTypes.bool,
-	  previous: _react2.default.PropTypes.bool,
+	  index: _react2.default.PropTypes.number,
+	  currIndex: _react2.default.PropTypes.number,
+	  prevIndex: _react2.default.PropTypes.number,
 	  loaded: _react2.default.PropTypes.bool,
 	  playing: _react2.default.PropTypes.bool,
 	  duration: _react2.default.PropTypes.number,
+	  lastIndex: _react2.default.PropTypes.number,
 	  func: _react2.default.PropTypes.string,
 	  anim: _react2.default.PropTypes.string
 	};
@@ -22302,16 +22317,20 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 	// module
-	exports.push([module.id, "@-webkit-keyframes _VazxRFV68w1v{\n    from {left: 100%;}\n    to {left: 0;}\n}\n@keyframes _VazxRFV68w1v{\n    from {left: 100%;}\n    to {left: 0;}\n}\n@-webkit-keyframes _1DU1uMbh0J6m{\n    from {left: 0;}\n    to {left: -100%;}\n}\n@keyframes _1DU1uMbh0J6m{\n    from {left: 0;}\n    to {left: -100%;}\n}\n\n._1zM0aMsnXDae{\n    position: absolute;\n    left: 0;\n    top: 0;\n    width: 100%;\n    height: 100%;\n    display: none;\n}\n._17CSMcLpcX9F{\n    display: block;\n}\n._208PNqIKZYaZ{\n    display: block;\n    animation-name: _VazxRFV68w1v;\n    -webkit-animation-name: _VazxRFV68w1v;\n    animation-fill-mode: forwards;\n    -webkit-animation-fill-mode: forwards;\n}\n._1RTYzE9deHH_{\n    display: block;\n    left: -100%;\n    animation-name: _1DU1uMbh0J6m;\n    -webkit-animation-name: _1DU1uMbh0J6m;\n    animation-fill-mode: forwards;\n    -webkit-animation-fill-mode: forwards;\n}\n", ""]);
+	exports.push([module.id, "@-webkit-keyframes _VazxRFV68w1v{\n    from {left: 100%;}\n    to {left: 0;}\n}\n@keyframes _VazxRFV68w1v{\n    from {left: 100%;}\n    to {left: 0;}\n}\n@-webkit-keyframes _1DU1uMbh0J6m{\n    from {left: 0;}\n    to {left: -100%;}\n}\n@keyframes _1DU1uMbh0J6m{\n    from {left: 0;}\n    to {left: -100%;}\n}\n@-webkit-keyframes _1ZI4HZrM1onU{\n    from {left: -100%;}\n    to {left: 0;}\n}\n@keyframes _1ZI4HZrM1onU{\n    from {left: -100%;}\n    to {left: 0;}\n}\n@-webkit-keyframes _EW6BYeJa51GN{\n    from {left: 0;}\n    to {left: 100%;}\n}\n@keyframes _EW6BYeJa51GN{\n    from {left: 0;}\n    to {left: 100%;}\n}\n\n._1zM0aMsnXDae{\n    position: absolute;\n    left: 0;\n    top: 0;\n    width: 100%;\n    height: 100%;\n    display: none;\n}\n._17CSMcLpcX9F{\n    display: block;\n}\n._2Kl2QroLsiOR{\n    display: block;\n    animation-name: _VazxRFV68w1v;\n    -webkit-animation-name: _VazxRFV68w1v;\n    animation-fill-mode: forwards;\n    -webkit-animation-fill-mode: forwards;\n}\n._3ClEOL_1EKwN{\n    display: block;\n    left: -100%;\n    animation-name: _1DU1uMbh0J6m;\n    -webkit-animation-name: _1DU1uMbh0J6m;\n    animation-fill-mode: forwards;\n    -webkit-animation-fill-mode: forwards;\n}\n._3QvpAwuCidKG{\n    display: block;\n    animation-name: _1ZI4HZrM1onU;\n    -webkit-animation-name: _1ZI4HZrM1onU;\n    animation-fill-mode: forwards;\n    -webkit-animation-fill-mode: forwards;\n}\n._PgfOrNHAEdi9{\n    display: block;\n    left: 100%;\n    animation-name: _EW6BYeJa51GN;\n    -webkit-animation-name: _EW6BYeJa51GN;\n    animation-fill-mode: forwards;\n    -webkit-animation-fill-mode: forwards;\n}\n", ""]);
 
 	// exports
 	exports.locals = {
 		"item": "_1zM0aMsnXDae",
 		"item_display_block": "_17CSMcLpcX9F",
-		"item_position_current": "_208PNqIKZYaZ",
+		"item_position_current_to_left": "_2Kl2QroLsiOR",
 		"from-right-to-left-in": "_VazxRFV68w1v",
-		"item_position_previous": "_1RTYzE9deHH_",
-		"from-right-to-left-out": "_1DU1uMbh0J6m"
+		"item_position_previous_to_left": "_3ClEOL_1EKwN",
+		"from-right-to-left-out": "_1DU1uMbh0J6m",
+		"item_position_current_to_right": "_3QvpAwuCidKG",
+		"from-left-to-right-in": "_1ZI4HZrM1onU",
+		"item_position_previous_to_right": "_PgfOrNHAEdi9",
+		"from-left-to-right-out": "_EW6BYeJa51GN"
 	};
 
 /***/ },
@@ -22349,12 +22368,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 	// module
-	exports.push([module.id, "._1qr8sHHPe70p{\n    position: absolute;\n    top: 0;\n    left: 0;\n    bottom: 0;\n    right: 0;\n    max-width: 100%;\n    max-height: 100%;\n    margin: auto;\n}\n\n._1Q_dkEOM0qTk{\n    position: absolute;\n    left: 0;\n    top: 0;\n    right: 0;\n    bottom: 0;\n    margin: auto;\n    -webkit-filter: blur(5px);\n    filter: blur(5px);\n}\n", ""]);
+	exports.push([module.id, "._1qr8sHHPe70p{\n    position: absolute;\n    top: 0;\n    left: 0;\n    bottom: 0;\n    right: 0;\n    margin: auto;\n    background-position: 50% 50%;\n    background-repeat: no-repeat;\n    background-size: contain;\n}\n\n._qrxexeWG-jLx{\n    -webkit-filter: blur(5px);\n    filter: blur(5px);\n}\n", ""]);
 
 	// exports
 	exports.locals = {
 		"image": "_1qr8sHHPe70p",
-		"thumbnail": "_1Q_dkEOM0qTk"
+		"blur": "_qrxexeWG-jLx"
 	};
 
 /***/ }
